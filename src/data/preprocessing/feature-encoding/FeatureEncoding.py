@@ -38,7 +38,7 @@ class FeatureEncoder(BaseEstimator, TransformerMixin):
     
 # Dataset Path
 current_dir = os.path.dirname(os.path.abspath(__file__))
-data_path = os.path.join(current_dir, '../../../train.csv')
+data_path = os.path.join(current_dir, '../../train.csv')
 
 # Load the dataset
 df = pd.read_csv(data_path)
