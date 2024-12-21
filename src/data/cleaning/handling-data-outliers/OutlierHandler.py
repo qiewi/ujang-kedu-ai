@@ -1,81 +1,77 @@
 import pandas as pd
 import numpy as np
+from sklearn.base import BaseEstimator, TransformerMixin
 import os
 
-class OutlierHandler:
-    def __init__(self, method='iqr', multiplier=1.5, strategy='clip', transform=None):
+class OutlierHandler(BaseEstimator, TransformerMixin):
+    def __init__(self, method='iqr', multiplier=1.5, strategy='clip'):
         """
-        method: Outlier detection method ('iqr' supported).
-        multiplier: Multiplier for IQR to calculate bounds.
+        method: Outlier detection method ('iqr' supported currently).
+        multiplier: Multiplier for IQR to calculate bounds (used only with 'iqr' method).
         strategy: Strategy to handle outliers ('clip', 'mean', 'median').
-        transform: Transformation to apply ('log', 'sqrt', or None).
         """
         self.method = method
         self.multiplier = multiplier
         self.strategy = strategy
-        self.transform = transform
         self.bounds = {}
 
-    def fit(self, X):
-        # Identify numeric columns in the dataset
+    def fit(self, X, y=None):
+        # Automatically detect numeric columns
         numeric_cols = X.select_dtypes(include=[np.number]).columns
 
-        # For each numeric column, calculate Q1, Q3, and IQR
+        # Calculate bounds for each numeric column using IQR method
         for col in numeric_cols:
             Q1 = X[col].quantile(0.25)
             Q3 = X[col].quantile(0.75)
             IQR = Q3 - Q1
-
-            # Calculate lower and upper bounds based on IQR and multiplier
             self.bounds[col] = {
                 'lower': Q1 - self.multiplier * IQR,
                 'upper': Q3 + self.multiplier * IQR
             }
-        print("Bounds calculated for numeric columns:", self.bounds)
+        print(f"Bounds calculated for columns: {self.bounds}")
         return self
 
-    def transform(self, X):
+    def transform(self, X, y=None):
+        # Ensure that bounds are calculated before transforming
         if not self.bounds:
-            raise ValueError("Bounds are not calculated. Please call 'fit' before 'transform'.")
+            raise ValueError("The model is not fitted yet. Please call 'fit' first.")
         
-        # Create a copy of the dataset to avoid modifying the original data
         X = X.copy()
 
-        # Apply transformations to reduce skewness if specified
-        if self.transform == 'log':
-            X = X.applymap(lambda x: np.log1p(x) if np.issubdtype(type(x), np.number) and x > 0 else x)
-        elif self.transform == 'sqrt':
-            X = X.applymap(lambda x: np.sqrt(x) if np.issubdtype(type(x), np.number) and x > 0 else x)
-
-        # Handle outliers using the specified strategy
+        # Handle outliers based on the calculated bounds
         for col, bounds in self.bounds.items():
             if col in X.columns:
                 if self.strategy == 'clip':
+                    # Clipping the values between lower and upper bounds
                     X[col] = np.clip(X[col], bounds['lower'], bounds['upper'])
                 elif self.strategy == 'mean':
+                    # Replace outliers with the mean of the column
                     mean_value = X[col].mean()
                     X[col] = X[col].where(
                         (X[col] >= bounds['lower']) & (X[col] <= bounds['upper']),
                         mean_value
                     )
                 elif self.strategy == 'median':
+                    # Replace outliers with the median of the column
                     median_value = X[col].median()
                     X[col] = X[col].where(
                         (X[col] >= bounds['lower']) & (X[col] <= bounds['upper']),
                         median_value
                     )
-        print("Outliers handled for numeric columns.")
         return X
 
 # Dataset Path
 current_dir = os.path.dirname(os.path.abspath(__file__))
-data_path = os.path.join(current_dir, '../../train.csv')
+data_path = os.path.join(current_dir, '../handling-missing-data/cleaned_data.csv')
 
 # Load the dataset
 df = pd.read_csv(data_path)
 
+# Clean up any NaN or infinite values before proceeding
+df = df.replace([np.inf, -np.inf], np.nan).dropna()
+
 # Initialize and apply the OutlierHandler
-handler = OutlierHandler(method='iqr', multiplier=1.5, strategy='mean')  # Correct parameter name 'strategy'
+handler = OutlierHandler(method='iqr', multiplier=1.5, strategy='clip')  # Renamed parameter
 handler.fit(df)  # Fit to calculate bounds
 df_no_outliers = handler.transform(df)  # Transform to handle outliers
 
