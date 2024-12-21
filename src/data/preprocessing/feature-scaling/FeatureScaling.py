@@ -4,7 +4,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 
 class FeatureScaler(BaseEstimator, TransformerMixin):
-    def __init__(self, method='standard'):
+    def __init__(self, method):
         # Choose scaler based on the method
         if method == 'standard':
             self.scaler = StandardScaler()
@@ -17,7 +17,7 @@ class FeatureScaler(BaseEstimator, TransformerMixin):
         self.numeric_columns = None
 
     def fit(self, X, y=None):
-        # Identify numerical columns to scale, excluding 'id' and 'label'
+        # Identify numerical columns to scale without id and label
         self.numeric_columns = [
             col for col in X.select_dtypes(include=['float64', 'int64']).columns
             if col not in ['id', 'label']
@@ -43,10 +43,10 @@ data_path = os.path.join(current_dir, '../../train.csv')
 # Load the dataset
 df = pd.read_csv(data_path)
 
-# Initialize the scaler
-scaler = FeatureScaler(method='standard')  # Change 'standard' to 'minmax' or 'robust' as needed
+# Initialization
+scaler = FeatureScaler(method='standard')  # Changeable
 scaler.fit(df)
 df_scaled = scaler.transform(df)
 
-# Save scaled data to the specified path
+# Data Saving
 scaler.save(df_scaled, current_dir)
