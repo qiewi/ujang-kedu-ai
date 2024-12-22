@@ -3,13 +3,13 @@
 <br />
 <div align="center">
 
-<h3 align="center">
+<h1 align="center">
  IF3070 Inteligensi Artifisial 
 </h3>
 
-  <p align="center">
+  <h2 align="center">
     Tugas Besar Milestone 2: Implementasi Algoritma Pembelajaran Mesin
-  </p>
+  </h2>
 </div>
 
 
